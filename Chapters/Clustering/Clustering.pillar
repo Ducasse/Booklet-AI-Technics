@@ -1,0 +1,156 @@
+!Evaluating clustering performance
+
+Validation of cluster analysis is an important aspect of measuring how well multiple clustering methods performed on a data set. As clustering is more about discovering than an exact prediction method, and every clustering algorithm has its own advantages and drawbacks, several indices can be used to determine if the right number of clusters were discovered.
+
+Roughly, there are two major strategies to assess clustering quality:
+
+""External cluster evaluation"" : Which involves comparing results of a cluster method, with already known labels of another "reference" cluster. This type of assessment is similar to supervised learning, as at least one of the clustering results is considered to have the "ground truth clusters" or the optimal solution. Examples of this type of metric are the Rand Index (Rand, 1971), the Adjusted Rand Index or ARI (Hubert and Arabie, 1985), the F-measure, the Jaccard index (Anderberg, 1973), the Dice index and the Normalised Mutual Information (NMI).
+
+""Internal cluster evaluation"" : Which does not use information outside the dataset, like human annotations, and involves summarization into a single quality score. Examples of this type of metric are the Silhouette Coeffecient......
+
+!! Rand Index
+
+A "Rand Index" is a Float between 0 and 1 representing the number of agreements between two data clusterings, presumably from two different methods on the same data set. You may use the rand index score to compare how two partitions (clustering results) agreed. A value of 1 means that clusterings between two methods were the same, and these partitions agree perfectly, and 0 means that the two data clusterings disagree on any pair of points.
+
+Let's say you have multiple ways to group a set of objects. You applied them through different clustering algorithms to your data set, and now it's time to evaluate if the clusters formed by each method are in concordance with each other. Note you may have already a "reference" grouping, for example a column in your dataset which already has a cluster assignment and is taken as ground truth class labels.
+
+We begin by considering two clustering results in perfect agreement:
+
+[[[
+| clusterResult1 clusterResult2 |
+clusterResult1 := { 
+	'Tolstoi' -> 1 . 
+	'Hesse' -> 1 .
+	'Borges' -> 2 . 
+	'Eco' -> 2  }.
+clusterResult2 := clusterResult1.
+]]]
+
+Consider the following two hypothetical clustering methods which assigned three clusters and two clusters of famous writers respectively:
+
+[[[
+| clusterResult1 clusterResult2 |
+
+clusterResult1 := { 
+	'Tolstoi' -> 1 . 
+	'Hesse' -> 1 . 
+	'Borges' -> 2 . 
+	'Eco' -> 2 . 
+	'Foucault' -> 3 . 
+	'Deleuze' -> 3 
+	} asDataSeries.
+
+clusterResult2 := { 
+	'Tolstoi' -> 1 . 
+	'Hesse' -> 1 . 
+	'Borges' -> 1 . 
+	'Eco' -> 2 . 
+	'Foucault' -> 2 . 
+	'Deleuze' -> 2
+	} asDataSeries.
+]]]
+
+We can obtain the Rand index in Pharo using the ==MLRandIndex== class, passing as argument the collection of assignments for each clustering method:
+
+[[[
+MLRandIndex 
+    score: clusterResult1 values 
+    with: clusterResult2 values.
+]]]
+
+The Rand Index is this case is "0.666", and it represents the fraction of all pairs of points on which the two clusterings agree. It is defined by the following formula:
+
+''How to insert a formula?'' ''Work in progress''
+.....
+R(C1,C2) = N11 + N00 / (n 2)
+....
+
+
+The algorithm builds every posible unordered pair of elements in each cluster result. You can easily get this combination by evaluating:
+
+[[[
+clusterResult1 keys
+	combinations: 2 
+	atATimeDo: [ : each | Transcript cr; show: each printString ].
+]]]
+
+Then it counts the number pairs grouped by both clustering methods, and the number of pairs NOT grouped together. If one of the clusterings is taken as "ground truth labels", say for example the clusterResult1, the index can be also analysed as counting the True-Positives, True-Negatives, False-Positives and False-Negatives.
+
+In our example:
+
+Figure 1
+
+
+!! Adjusted Rand Index
+
+In practice, most applications use one or several corrected versions of the Rand Index, as the classic RI is highly dependent upon the number of clusters. This is, when the data set used is small or the number of clusters increase, there is a higher chance of agreements are overlaped just due to chance. This variation or RI enables to adjust the amount of agreement in the cluster solutions with chance normalization and ignoring permutations, meaning that renaming labels does not affecting the score.
+
+The Adjusted Rand Index (ARI) is a Float between -1 and 1, where positive values mean that pairs in the known clusters and predicted clusters are similar, being 1 the perfect agreement and 0 represents chance agreement, and negative values mean that pairs in the known clusters and predicted clusters are highly different. Certainly, the higher the value of ARI, the better the predictive ability of the evaluated clustering method. A word of caution worth it: There are actually two initial formulas of ARI, the Morey and Agresti (1984) usually referred as MA or ARIma, and a corrected version from Hubert and Arabie (1985) known as HA or ARIha. There are additional variations which we include in the package: Fowlkes–Mallows Index, Mirkin Metric and Jaccard Coefficient.
+
+We follow the following conventions:
+
+''Use a table''
+
+- Hubert and Arabie with the selector #forIndexHA.
+- Fowlkes–Mallows with the selector #forIndexFM.
+- Mirkin Metric with the selector #forIndexMM.
+- Jaccard Coefficient with the selector #forIndexJaccard.
+
+The #forAllIndexes iterates through all subclasses of the abstract MLAdjustedRandIndex and calculates the index for each strategy, returning a Matrix with results.
+
+These are defined by the formulas:''Work in progress''
+
+Check this statement: ''Another interesting fact of ARI as Internal validation, to build consensus between multiple clusterings.''
+
+To continue with the simplest example of a perfect agreement:
+
+[[[
+| clusterResult1 clusterResult2 |
+clusterResult1 := { 
+	'Tolstoi' -> 1 . 
+	'Hesse' -> 1 .
+	'Borges' -> 2 . 
+	'Eco' -> 2  }.
+clusterResult2 := clusterResult1.
+
+MLAdjustedRandIndex forAllIndexes
+    score: clusterResult1 
+    with: clusterResult2.
+]]]
+
+To follow a proper interpretation,  Steinley (2004) indicates the following levels of agreement,  based on its result:
+
+- An index greater than 0.90 are considered excellent recovery
+- An index greater than 0.80 are considered good recovery, 
+- An index greater than 0.65 are considered moderate recovery 
+- An index less than 0.65 are considered poor recovery
+
+!! Fowlkes–Mallows Index
+
+''Work in progress''
+
+!! Mirkin Metric
+
+''Work in progress''
+
+!! Jaccard Distance
+
+The Jaccard Index, also known as the Jaccard similarity coefficient, is a Float value between 0 and 1 which  measures the degree of overlap between two sets, in a very similar fashion to the Rand Index except that True Negatives are not considered. The closer to 1, the more similar the two datasets, the close to 0 the more dissimilar.
+
+Intuitively, it is defined as follows:
+
+Jaccard Index = (the number of unique elements in both sets) / (the total number of unique elements in either set)
+
+The same formula in notation is:
+
+J(X,Y) = |X ∩ Y | / | X ∪ Y |
+
+''Work in progress''
+
+!! The Dice Index
+
+Also known as Sørensen–Dice coefficient, or F1 score, represents the harmonic mean of the precision and recall. 
+
+''Work in progress''
+
+
